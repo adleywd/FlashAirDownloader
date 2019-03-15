@@ -2,25 +2,28 @@ package br.com.adley.flashairdownloader;
 
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import br.com.adley.flashairdownloader.Models.FileModel;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button mBtnGet;
     private String mGetUrlNumberItems = "http://flashair/command.cgi?op=101&DIR=/DCIM";
     private String mGetUrlListItems = "http://flashair/command.cgi?op=100&DIR=/DCIM";
+    private String[] mTypes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +32,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        mTypes = new String[3];
+        mTypes[0] = ".png";
+        mTypes[1] = ".jpeg";
+        mTypes[2] = ".jpg";
         mBtnGet = findViewById(R.id.btnGet);
         mBtnGet.getBackground().setColorFilter(Color.rgb(65, 183, 216), PorterDuff.Mode.SRC_IN);
     }
@@ -39,8 +46,8 @@ public class MainActivity extends AppCompatActivity {
         mBtnGet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GetNumberItems();
                 GetItemsResult();
+                //GetNumberItems();
             }
         });
     }
@@ -68,8 +75,28 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try{
                     String result = FlashAirRequest.getString(mGetUrlListItems);
-                    TextView itemsResult = findViewById(R.id.itemsResult);
-                    itemsResult.setText(result);
+                    //TextView itemsResult = findViewById(R.id.itemsResult);
+                    //itemsResult.setText(result);
+                    String[] allLines = result.split("([\n])");
+                    List<FileModel> fileList = new ArrayList<>();
+                    for (int i=1; i < allLines.length; i++) {
+                        String[] values = allLines[i].split(",");
+                        FileModel file = new FileModel();
+                        file.setDirectory(values[0]);
+                        file.setFilename(values[1]);
+                        file.setSize(values[2]);
+                        file.setAttribute(values[3]);
+                        file.setDate(values[4]);
+                        file.setTime(values[5]);
+                        for (String mType : mTypes) {
+                            if (file.getFilename().endsWith(mType)) {
+                                fileList.add(file);
+                                break;
+                            }
+                        }
+                    }
+                    fileList.toArray();
+                    
                 }
                 catch (Exception e){
                     System.out.println(e.getMessage());
