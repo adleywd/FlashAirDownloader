@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">FlashAirDownloader</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_image_view">ImageViewActivity</string>
+</resources>
