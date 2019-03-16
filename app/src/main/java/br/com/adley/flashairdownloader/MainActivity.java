@@ -1,8 +1,6 @@
 package br.com.adley.flashairdownloader;
 
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -21,7 +19,7 @@ import br.com.adley.flashairdownloader.Models.FileModel;
 public class MainActivity extends AppCompatActivity {
 
     private Button mBtnGet;
-    private String mGetUrlNumberItems = "http://flashair/command.cgi?op=101&DIR=/DCIM";
+    private TextView mTxtProcessDone;
     private String mGetUrlListItems = "http://flashair/command.cgi?op=100&DIR=/DCIM";
     private String[] mTypes;
     private List<FileModel> mFileList = new ArrayList<>();
@@ -34,20 +32,25 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Configure expected types.
         mTypes = new String[3];
         mTypes[0] = ".png";
         mTypes[1] = ".jpeg";
         mTypes[2] = ".jpg";
         mBtnGet = findViewById(R.id.btnGet);
-        mBtnGet.getBackground().setColorFilter(Color.rgb(65, 183, 216), PorterDuff.Mode.SRC_IN);
+        mTxtProcessDone = findViewById(R.id.txtProcessDone);
     }
 
     @Override
     protected void onPostCreate(@Nullable Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+
+        // Prepare Get and Download Button
         mBtnGet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mBtnGet.setAlpha(.5f);
+                mBtnGet.setClickable(false);
                 GetItemsResult();
             }
         });
@@ -60,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    final String result = FlashAirRequest.getString(mGetUrlListItems);
+                    final String result = FlashAirRequest.getStringPics(mGetUrlListItems);
                     String[] allLines = result.split("([\n])");
                     for (int i = 1; i < allLines.length; i++) {
                         String[] values = allLines[i].split(",");
@@ -84,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                         public void run() {
                             TextView numberItems = findViewById(R.id.numberItems);
                             numberItems.setText(String.format("Photos Found: %s", mFileList.size()));
+                            mTxtProcessDone.setText("Processing...!");
                         }
                     });
                     DownloadImages(0);
@@ -103,24 +107,34 @@ public class MainActivity extends AppCompatActivity {
                 String result = FlashAirRequest.getBase64Image(urlDownload);
                 mFileList.get(index).setBase64(result);
                 if (index < mFileList.size()-1) {
+                    runOnUiThread(new Runnable() {
+                        @SuppressLint("DefaultLocale")
+                        @Override
+                        public void run() {
+                            mTxtProcessDone.setText(
+                                    String.format("Processing:\n (%d)-%s", index, mFileList.get(index).getFilename())
+                            );
+                        }
+                    });
                     DownloadImages(index + 1); // Recursive method
                 } else {
-                    //GetImagesBase64(0);
-                    fakeSync();
+                    SetDoneProcess();
                 }
 
             }
         }).start();
     }
 
-    public void fakeSync(){
-        System.out.println("-----------------------------SYNC----------------------------");
-    }
-
-    public void freeMemory(){
-        System.runFinalization();
-        Runtime.getRuntime().gc();
-        System.gc();
+    public void SetDoneProcess(){
+        // Test base64 site: https://codebeautify.org/base64-to-image-converter
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mTxtProcessDone.setText("DONE!!");
+                mBtnGet.setAlpha(1f);
+                mBtnGet.setClickable(true);
+            }
+        });
     }
 
     @Override

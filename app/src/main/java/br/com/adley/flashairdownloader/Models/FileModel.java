@@ -11,15 +11,6 @@ public class FileModel {
     private String date;
     private String time;
     private String base64;
-    private Bitmap bitmap;
-
-    public Bitmap getBitmap() {
-        return bitmap;
-    }
-
-    public void setBitmap(Bitmap bitmap) {
-        this.bitmap = bitmap;
-    }
 
     public String getBase64() {
         return base64;
