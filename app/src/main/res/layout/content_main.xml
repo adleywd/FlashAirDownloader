@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:cacheColorHint="#00000000"
-        android:text="Get List"
+        android:text="Get and Download"
         android:textColor="@android:color/white"
         android:textSize="20sp" />
     <TextView
@@ -23,15 +23,8 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:scaleType="centerInside"
-        android:text="# of items will be here"
+        android:text="Photos Found: X"
         android:textAlignment="center"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="20sp" />
-    <TextView
-        android:id="@+id/itemsResult"
-        android:layout_width="match_parent"
-        android:layout_height="fill_parent"
-        android:text="List of contents will be here"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="20sp" />
 </LinearLayout>

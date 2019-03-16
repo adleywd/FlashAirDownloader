@@ -7,20 +7,12 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,35 +49,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 GetItemsResult();
-                //GetNumberItems();
             }
         });
-    }
-
-    public void GetNumberItems() {
-        Thread getItemsThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String result = FlashAirRequest.getString(mGetUrlNumberItems);
-                    TextView numberItems = findViewById(R.id.numberItems);
-                    numberItems.setText(String.format("Items Found: %s", result));
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
-            }
-        });
-        getItemsThread.start();
     }
 
     public void GetItemsResult() {
-        Thread getItemsThread = new Thread(new Runnable() {
+        //Clear the list
+        mFileList = new ArrayList<>();
+        new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    String result = FlashAirRequest.getString(mGetUrlListItems);
-                    //TextView itemsResult = findViewById(R.id.itemsResult);
-                    //itemsResult.setText(result);
+                    final String result = FlashAirRequest.getString(mGetUrlListItems);
                     String[] allLines = result.split("([\n])");
                     for (int i = 1; i < allLines.length; i++) {
                         String[] values = allLines[i].split(",");
@@ -103,76 +78,51 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     }
+                    // run on ui thread to update UI
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TextView numberItems = findViewById(R.id.numberItems);
+                            numberItems.setText(String.format("Photos Found: %s", mFileList.size()));
+                        }
+                    });
                     DownloadImages(0);
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                 }
             }
-        });
-        getItemsThread.start();
+        }).start();
     }
 
     public void DownloadImages(final int index) {
-            final FileModel pic = mFileList.get(index);
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    String urlDownload = "http://flashair" + pic.getDirectory() + "/" + pic.getFilename();
-                    Bitmap result = FlashAirRequest.getBitmap(urlDownload);
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                    result.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-                    byte[] byteArray = byteArrayOutputStream .toByteArray();
-                    String base64 = Base64.encodeToString(byteArray, Base64.DEFAULT);
-                    pic.setBase64(base64);
-                    if(mFileList.size() <= index)
-                        DownloadImages(index+1);
-                    else
-                        ShowResults();
-                /*byte[] data = null;
-                int fileSize = Integer.parseInt(pic.getSize());
-
-                try {
-
-                    URL url = new URL(urlDownload);
-                    URLConnection urlCon = url.openConnection();
-                    urlCon.connect();
-                    InputStream inputStream = urlCon.getInputStream();
-
-                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-                    byte[] byteChunk = new byte[1024];
-                    int bytesRead = 0;
-                    while ((bytesRead = inputStream.read(byteChunk)) != -1) {
-                        byteArrayOutputStream.write(byteChunk, 0, bytesRead);
-                        byteArrayOutputStream = new ByteArrayOutputStream();
-
-                        byteChunk = new byte[fileSize];
-                        bytesRead = 0;
-                        while ((bytesRead = inputStream.read(byteChunk)) != -1) {
-                            byteArrayOutputStream.write(byteChunk, 0, bytesRead);
-                        }
-
-                        data = byteArrayOutputStream.toByteArray();
-                        String base64 = Base64.encodeToString(data, Base64.DEFAULT);
-                        pic.setBase64(base64);
-                        byteArrayOutputStream.flush();
-                        byteArrayOutputStream.close();
-                        //pic.getBase64();
-                    }
-                    System.out.println("-----------------FOI----------------------------------");
-                    ShowResults();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
+        final FileModel file = mFileList.get(index);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String urlDownload = "http://flashair" + file.getDirectory() + "/" + file.getFilename();
+                String result = FlashAirRequest.getBase64Image(urlDownload);
+                mFileList.get(index).setBase64(result);
+                if (index < mFileList.size()-1) {
+                    DownloadImages(index + 1); // Recursive method
+                } else {
+                    //GetImagesBase64(0);
+                    fakeSync();
                 }
-            }).start();
-        }
 
-    public void ShowResults(){
-        System.out.println(mFileList.get(0).getBase64());
+            }
+        }).start();
     }
+
+    public void fakeSync(){
+        System.out.println("-----------------------------SYNC----------------------------");
+    }
+
+    public void freeMemory(){
+        System.runFinalization();
+        Runtime.getRuntime().gc();
+        System.gc();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
